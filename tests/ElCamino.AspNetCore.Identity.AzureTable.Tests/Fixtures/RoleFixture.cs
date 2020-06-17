@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ElCamino.AspNetCore.Identity.AzureTable;
+using ElCamino.AspNetCore.Identity.AzureTable.Tests.Fixtures;
 using IdentityRole = ElCamino.AspNetCore.Identity.AzureTable.Model.IdentityRole;
 using Microsoft.AspNetCore.Identity;
 

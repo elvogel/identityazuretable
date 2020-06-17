@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class IdentityAzureTableBuilderExtensions
     {
         /// <summary>
-        /// Call .AddRoles<IdentityRole>() in the pipeline if you need Roles functionality, otherwise the RoleStore will not be loaded.
+        /// Call .AddRoles&lt;IdentityRole&gt;() in the pipeline if you need Roles functionality, otherwise the RoleStore will not be loaded.
         /// </summary>
         /// <typeparam name="TContext"></typeparam>
         /// <param name="builder"></param>
@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             builder.Services.AddSingleton<IKeyHelper>(new DefaultKeyHelper());
 
-            builder.Services.AddSingleton<IdentityConfiguration>(new Func<IServiceProvider, IdentityConfiguration>(p => configAction()));
+            builder.Services.AddSingleton(p => configAction());
 
             Type contextType = typeof(TContext);
             builder.Services.AddScoped(contextType, contextType);
@@ -44,18 +44,15 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
-        public static IdentityBuilder CreateAzureTablesIfNotExists<TContext>(this IdentityBuilder builder)
-            where TContext : IdentityCloudContext, new()
+        public static void CreateAzureTablesIfNotExists(this IdentityBuilder builder)
         {
-            Type contextType = typeof(TContext);
+            //Type contextType = typeof(TContext);
             Type userStoreType = typeof(IUserStore<>).MakeGenericType(builder.UserType);
 
             var userStore = ActivatorUtilities.GetServiceOrCreateInstance(builder.Services.BuildServiceProvider(),
                 userStoreType) as dynamic;
 
             userStore.CreateTablesIfNotExistsAsync();
-
-            return builder;
         }
     }
 }

@@ -2,21 +2,19 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos.Table;
 
 namespace ElCamino.AspNetCore.Identity.AzureTable.Model
 {
     public class IdentityUser : IdentityUser<string>, IGenerateKeys
     {
-        public IdentityUser() : base() { }
+        public IdentityUser()
+        { }
 
         public IdentityUser(string userName)
             : this()
         {
-            this.UserName = userName;
+            UserName = userName;
         }
 
         /// <summary>
@@ -48,7 +46,7 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Model
 
         
 
-        public override string UserName
+        public sealed override string UserName
         {
             get => base.UserName;
             set
@@ -64,11 +62,6 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Model
     public class IdentityUser<TKey> : Microsoft.AspNetCore.Identity.IdentityUser<TKey>, ITableEntity
         where TKey : IEquatable<TKey>
     {
-        public IdentityUser()
-        {
-        }
-
-
         public virtual DateTime? LockoutEndDateUtc { get; set; }
 
         /// <summary>
@@ -81,7 +74,7 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Model
             {
                 if(LockoutEndDateUtc.HasValue)
                 {
-                    return new DateTimeOffset?(new DateTimeOffset(LockoutEndDateUtc.Value));
+                    return new DateTimeOffset(LockoutEndDateUtc.Value);
                 }
 
                 return null;

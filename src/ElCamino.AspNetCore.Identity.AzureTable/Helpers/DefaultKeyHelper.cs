@@ -1,14 +1,10 @@
 ﻿// MIT License Copyright 2020 (c) David Melendez. All rights reserved. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
 using ElCamino.AspNetCore.Identity.AzureTable.Model;
-using Microsoft.AspNetCore.Identity;
 
 namespace ElCamino.AspNetCore.Identity.AzureTable.Helpers
 {
@@ -16,7 +12,7 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Helpers
     {
         public string GeneratePartitionKeyIndexByLogin(string plainLoginProvider, string plainProviderKey)
         {
-            string strTemp = string.Format("{0}_{1}",plainLoginProvider?.ToUpper(),plainProviderKey?.ToUpper());
+            string strTemp = $"{plainLoginProvider?.ToUpper()}_{plainProviderKey?.ToUpper()}";
             string hash = ConvertKeyToHash(strTemp);
             return string.Format(Constants.RowKeyConstants.FormatterIdentityUserLogin, hash);
         }
@@ -69,21 +65,21 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Helpers
 
         public string GenerateRowKeyIdentityUserClaim(string claimType, string claimValue)
         {
-            string strTemp = string.Format("{0}_{1}", claimType?.ToUpper(), claimValue?.ToUpper());
+            string strTemp = $"{claimType?.ToUpper()}_{claimValue?.ToUpper()}";
             string hash = ConvertKeyToHash(strTemp);
             return string.Format(Constants.RowKeyConstants.FormatterIdentityUserClaim, hash);
         }
 
         public string GenerateRowKeyIdentityRoleClaim(string claimType, string claimValue)
         {
-            string strTemp = string.Format("{0}_{1}", claimType?.ToUpper(), claimValue?.ToUpper());
+            string strTemp = $"{claimType?.ToUpper()}_{claimValue?.ToUpper()}";
             string hash = ConvertKeyToHash(strTemp);
             return string.Format(Constants.RowKeyConstants.FormatterIdentityRoleClaim, hash);
         }
 
         public string GenerateRowKeyIdentityUserToken(string loginProvider, string name)
         {
-            string strTemp = string.Format("{0}_{1}", loginProvider?.ToUpper(), name?.ToUpper());
+            string strTemp = $"{loginProvider?.ToUpper()}_{name?.ToUpper()}";
             string hash = ConvertKeyToHash(strTemp);
             return string.Format(Constants.RowKeyConstants.FormatterIdentityUserToken, hash);
         }
@@ -95,7 +91,7 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Helpers
 
         public string GenerateRowKeyIdentityUserLogin(string loginProvider, string providerKey)
         {
-            string strTemp = string.Format("{0}_{1}", loginProvider?.ToUpper(), providerKey?.ToUpper());
+            string strTemp = $"{loginProvider?.ToUpper()}_{providerKey?.ToUpper()}";
             string hash = ConvertKeyToHash(strTemp);
             return string.Format(Constants.RowKeyConstants.FormatterIdentityUserLogin, hash);
         }
@@ -106,10 +102,8 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Helpers
         {
             if (input != null)
             {
-                using (SHA1 sha = SHA1.Create())
-                {
-                    return GetHash(sha, input);
-                }
+                using SHA1 sha = SHA1.Create();
+                return GetHash(sha, input);
             }
             return null;
         }
@@ -118,7 +112,7 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Helpers
         {
             // Convert the input string to a byte array and compute the hash. 
             byte[] data = shaHash.ComputeHash(Encoding.Unicode.GetBytes(input));
-            Debug.WriteLine(string.Format("Key Size before hash: {0} bytes", Encoding.UTF8.GetBytes(input).Length));
+            Debug.WriteLine($"Key Size before hash: {Encoding.UTF8.GetBytes(input).Length} bytes");
 
             // Create a new StringBuilder to collect the bytes 
             // and create a string.
@@ -126,11 +120,11 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Helpers
 
             // Loop through each byte of the hashed data  
             // and format each one as a hexadecimal string. 
-            for (int i = 0; i < data.Length; i++)
+            foreach (var t in data)
             {
-                sBuilder.Append(data[i].ToString("x2"));
+                sBuilder.Append(t.ToString("x2"));
             }
-            Debug.WriteLine(string.Format("Key Size after hash: {0} bytes", data.Length));
+            Debug.WriteLine($"Key Size after hash: {data.Length} bytes");
 
             // Return the hexadecimal string. 
             return sBuilder.ToString();

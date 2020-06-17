@@ -17,6 +17,7 @@ using ElCamino.Web.Identity.AzureTable.Tests.ModelTests;
 using ElCamino.Web.Identity.AzureTable.Tests.Fixtures;
 using Microsoft.AspNetCore.Identity;
 using ElCamino.AspNetCore.Identity.AzureTable.Helpers;
+using ElCamino.AspNetCore.Identity.AzureTable.Tests.Fixtures;
 
 namespace ElCamino.AspNetCore.Identity.AzureTable.Tests
 {

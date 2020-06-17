@@ -5,11 +5,7 @@
     <Copyright>Copyright ©  2020 David Melendez, MIT License</Copyright>
     <AssemblyTitle>Azure Table Storage Provider for ASP.NET Identity Core</AssemblyTitle>
     <Authors>David Melendez</Authors>
-    <TargetFrameworks>net461;netstandard2.0;netstandard2.1</TargetFrameworks>
     <AssemblyName>ElCamino.AspNetCore.Identity.AzureTable</AssemblyName>
-    <AssemblyOriginatorKeyFile>../../tools/Key.snk</AssemblyOriginatorKeyFile>
-    <SignAssembly>true</SignAssembly>
-    <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
     <PackageId>ElCamino.AspNetCore.Identity.AzureTable</PackageId>
     <PackageTags>ASP.NET;Identity Core;Azure;Table Storage;MVC;UserStore;RoleStore;UserManager;multi-tenant;RA-GRS;geo-redundant;Microsoft.AspNetCore.Identity</PackageTags>
     <PackageReleaseNotes>Check https://github.com/dlmelendez/identityazuretable/releases for the latest release information.
@@ -27,6 +23,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
   
 

@@ -9,7 +9,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using ElCamino.AspNetCore.Identity.AzureTable.Model;
-using ElCamino.AspNetCore.Identity.AzureTable.Helpers;
 using System.Threading;
 using System.IO;
 
@@ -17,22 +16,21 @@ namespace ElCamino.Identity.AzureTable.DataUtility
 {
     public class Program
     {
-        private static int iUserTotal = 0;
-        private static int iUserSuccessConvert = 0;
-        private static int iUserFailureConvert = 0;
-        private static object ObjectLock = new object();
-        private static ConcurrentBag<string> userIdFailures = new ConcurrentBag<string>();
+        private static int iUserTotal;
+        private static int iUserSuccessConvert;
+        private static int iUserFailureConvert;
+        private static readonly ConcurrentBag<string> userIdFailures = new ConcurrentBag<string>();
 
-        private readonly static List<string> helpTokens = new List<string>() { "/?", "/help" };
+        private static readonly List<string> helpTokens = new List<string>() { "/?", "/help" };
         private const string previewToken = "/preview:";
         private const string migrateToken = "/migrate:";
-        private readonly static List<string> validCommands = new List<string>() {
+        private static readonly List<string> validCommands = new List<string>() {
             MigrationFactory.Roles,
             MigrationFactory.Users
         };
-        private const string nodeleteToken = "/nodelete";
-        private const string maxdegreesparallelToken = "/maxparallel:";
-        private static int iMaxdegreesparallel = Environment.ProcessorCount * 2;
+        private const string noDeleteToken = "/nodelete";
+        private const string maxDegreesParallelToken = "/maxparallel:";
+        private static int iMaxDegreesParallel = Environment.ProcessorCount * 2;
         private static string MigrateCommand = string.Empty;
 
         private const string startPageToken = "/startpage:";
@@ -44,8 +42,7 @@ namespace ElCamino.Identity.AzureTable.DataUtility
         private static int iFinishPage = -1;
         private static int iPageSize = 1000;
 
-        private static bool migrateOption = false;
-        private static bool deleteOption = false;
+        private static bool migrateOption;
 
         public static IConfigurationRoot Configuration { get; private set; }
 
@@ -60,24 +57,38 @@ namespace ElCamino.Identity.AzureTable.DataUtility
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false);
             Configuration = builder.Build();
 
-            IdentityConfiguration sourceConfig = new IdentityConfiguration();
-            sourceConfig.TablePrefix = Configuration.GetSection("source:IdentityConfiguration:TablePrefix")?.Value;
-            sourceConfig.StorageConnectionString = Configuration.GetSection("source:IdentityConfiguration:StorageConnectionString")?.Value;
-            sourceConfig.LocationMode = Configuration.GetSection("source:IdentityConfiguration:LocationMode")?.Value ?? string.Empty;
-            sourceConfig.UserTableName = Configuration.GetSection("source:IdentityConfiguration:UserTableName")?.Value ?? string.Empty;
-            sourceConfig.IndexTableName = Configuration.GetSection("source:IdentityConfiguration:IndexTableName")?.Value ?? string.Empty;
-            sourceConfig.RoleTableName = Configuration.GetSection("source:IdentityConfiguration:RoleTableName")?.Value ?? string.Empty;
+            IdentityConfiguration sourceConfig = new IdentityConfiguration
+            {
+                TablePrefix = Configuration.GetSection("source:IdentityConfiguration:TablePrefix")?.Value,
+                StorageConnectionString =
+                    Configuration.GetSection("source:IdentityConfiguration:StorageConnectionString")?.Value,
+                LocationMode = Configuration.GetSection("source:IdentityConfiguration:LocationMode")?.Value ??
+                               string.Empty,
+                UserTableName = Configuration.GetSection("source:IdentityConfiguration:UserTableName")?.Value ??
+                                string.Empty,
+                IndexTableName = Configuration.GetSection("source:IdentityConfiguration:IndexTableName")?.Value ??
+                                 string.Empty,
+                RoleTableName = Configuration.GetSection("source:IdentityConfiguration:RoleTableName")?.Value ??
+                                string.Empty
+            };
 
-            IdentityConfiguration targetConfig = new IdentityConfiguration();
-            targetConfig.TablePrefix = Configuration.GetSection("target:IdentityConfiguration:TablePrefix")?.Value;
-            targetConfig.StorageConnectionString = Configuration.GetSection("target:IdentityConfiguration:StorageConnectionString")?.Value;
-            targetConfig.LocationMode = Configuration.GetSection("target:IdentityConfiguration:LocationMode")?.Value ?? string.Empty;
-            targetConfig.UserTableName = Configuration.GetSection("target:IdentityConfiguration:UserTableName")?.Value ?? string.Empty;
-            targetConfig.IndexTableName = Configuration.GetSection("target:IdentityConfiguration:IndexTableName")?.Value ?? string.Empty;
-            targetConfig.RoleTableName = Configuration.GetSection("target:IdentityConfiguration:RoleTableName")?.Value ?? string.Empty;
+            IdentityConfiguration targetConfig = new IdentityConfiguration
+            {
+                TablePrefix = Configuration.GetSection("target:IdentityConfiguration:TablePrefix")?.Value,
+                StorageConnectionString =
+                    Configuration.GetSection("target:IdentityConfiguration:StorageConnectionString")?.Value,
+                LocationMode = Configuration.GetSection("target:IdentityConfiguration:LocationMode")?.Value ??
+                               string.Empty,
+                UserTableName = Configuration.GetSection("target:IdentityConfiguration:UserTableName")?.Value ??
+                                string.Empty,
+                IndexTableName = Configuration.GetSection("target:IdentityConfiguration:IndexTableName")?.Value ??
+                                 string.Empty,
+                RoleTableName = Configuration.GetSection("target:IdentityConfiguration:RoleTableName")?.Value ??
+                                string.Empty
+            };
 
 
-            Console.WriteLine("MaxDegreeOfParallelism: {0}", iMaxdegreesparallel);
+            Console.WriteLine("MaxDegreeOfParallelism: {0}", iMaxDegreesParallel);
             Console.WriteLine("PageSize: {0}", iPageSize);
             Console.WriteLine("MigrateCommand: {0}", MigrateCommand);
 
@@ -100,7 +111,7 @@ namespace ElCamino.Identity.AzureTable.DataUtility
                     Console.WriteLine($"Source RoleTable: {sourceContext.RoleTable.Name}");
 
                     DateTime startLoad = DateTime.UtcNow;
-                    var allDataList = new List<DynamicTableEntity>(iPageSize);
+                    //var allDataList = new List<DynamicTableEntity>(iPageSize);
 
                     TableQuery tq = migration.GetSourceTableQuery();
 
@@ -134,11 +145,12 @@ namespace ElCamino.Identity.AzureTable.DataUtility
                         {
                             if (migrateOption)
                             {
-                                migration.ProcessMigrate(targetContext, sourceContext, sourceResults.Results, iMaxdegreesparallel,
+                                var name = entityRecordName;
+                                migration.ProcessMigrate(targetContext, sourceContext, sourceResults.Results, iMaxDegreesParallel,
                                 () =>
                                 {
                                     Interlocked.Increment(ref iUserSuccessConvert);
-                                    Console.WriteLine($"{entityRecordName}(s) Complete: {iUserSuccessConvert}");
+                                    Console.WriteLine($"{name}(s) Complete: {iUserSuccessConvert}");
                                 },
                                 (exMessage) =>
                                 {
@@ -209,7 +221,7 @@ namespace ElCamino.Identity.AzureTable.DataUtility
             }
             else
             {
-                List<string> nonHelpTokens = new List<string>() { previewToken, migrateToken, nodeleteToken, maxdegreesparallelToken, startPageToken, finishPageToken, pageSizeToken };
+                List<string> nonHelpTokens = new List<string>() { previewToken, migrateToken, noDeleteToken, maxDegreesParallelToken, startPageToken, finishPageToken, pageSizeToken };
                 if (!args.All(a => nonHelpTokens.Any(h => a.StartsWith(h, StringComparison.OrdinalIgnoreCase))))
                 {
                     DisplayInvalidArgs(args.Where(a => !nonHelpTokens.Any(h => h.StartsWith(a, StringComparison.OrdinalIgnoreCase))).ToList());
@@ -222,14 +234,14 @@ namespace ElCamino.Identity.AzureTable.DataUtility
                     DisplayInvalidArgs(new List<string>() { previewToken, migrateToken, "Cannot define /preview and /migrate. Only one can be used." });
                     return false;
                 }
-                bool isNoDelete = args.Any(a => a.Equals(nodeleteToken, StringComparison.OrdinalIgnoreCase));
+                bool isNoDelete = args.Any(a => a.Equals(noDeleteToken, StringComparison.OrdinalIgnoreCase));
                 if (isNoDelete && !isMigrate)
                 {
-                    DisplayInvalidArgs(new List<string>() { nodeleteToken, "/nodelete must be used with /migrate option." });
+                    DisplayInvalidArgs(new List<string>() { noDeleteToken, "/nodelete must be used with /migrate option." });
                     return false;
                 }
 
-                if (!ValidateIntToken(maxdegreesparallelToken, ref iMaxdegreesparallel)
+                if (!ValidateIntToken(maxDegreesParallelToken, ref iMaxDegreesParallel)
                     || !ValidateIntToken(startPageToken, ref iStartPage)
                     || !ValidateIntToken(finishPageToken, ref iFinishPage)
                     || !ValidateIntToken(pageSizeToken, ref iPageSize))
@@ -249,11 +261,10 @@ namespace ElCamino.Identity.AzureTable.DataUtility
 
                 if (iPageSize > 1000)
                 {
-                    DisplayInvalidArgs(new List<string>() { pageSizeToken, string.Format("{0} must be less than 1000", pageSizeToken) });
+                    DisplayInvalidArgs(new List<string>() { pageSizeToken, $"{pageSizeToken} must be less than 1000"});
                     return false;
                 }
                 migrateOption = isMigrate;
-                deleteOption = isMigrate && !isNoDelete;
 
                 return true;
             }
@@ -265,9 +276,8 @@ namespace ElCamino.Identity.AzureTable.DataUtility
             if (!string.IsNullOrWhiteSpace(args))
             {
                 string[] splitArgs = args.Split(":".ToCharArray());
-                int iTempValue = 0;
                 if (splitArgs.Length == 2
-                    && int.TryParse(splitArgs[1], out iTempValue)
+                    && int.TryParse(splitArgs[1], out var iTempValue)
                     && iTempValue > 0)
                 {
                     iTokenValue = iTempValue;
@@ -294,7 +304,9 @@ namespace ElCamino.Identity.AzureTable.DataUtility
                 }
                 else
                 {
-                    DisplayInvalidArgs(new List<string>() { args, string.Format("{0} must be followed by a valid command arg {1}", token, string.Join(",", validCommands.ToArray()))});
+                    DisplayInvalidArgs(new List<string>() { args,
+                        $"{token} must be followed by a valid command arg {string.Join(",", validCommands.ToArray())}"
+                    });
                     return false;
                 }
             }
@@ -319,7 +331,8 @@ namespace ElCamino.Identity.AzureTable.DataUtility
         }
         private static void DisplayHelp()
         {
-            StreamReader sr = new StreamReader(System.Reflection.Assembly.GetEntryAssembly().GetManifestResourceStream("ElCamino.Identity.AzureTable.DataUtility.help.txt"));
+            // ReSharper disable once AssignNullToNotNullAttribute
+            StreamReader sr = new StreamReader(System.Reflection.Assembly.GetEntryAssembly()?.GetManifestResourceStream("ElCamino.Identity.AzureTable.DataUtility.help.txt"));
             Console.WriteLine(sr.ReadToEndAsync().Result);
 
             DisplayAnyKeyToExit();

@@ -1,25 +1,20 @@
 ﻿// MIT License Copyright 2020 (c) David Melendez. All rights reserved. See License.txt in the project root for license information.
 
 using System;
-using ElCamino.AspNetCore.Identity.AzureTable;
+using ElCamino.AspNetCore.Identity.AzureTable.Helpers;
 using ElCamino.AspNetCore.Identity.AzureTable.Model;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using IdentityUser = ElCamino.AspNetCore.Identity.AzureTable.Model.IdentityUser<string>;
 using IdentityRole = ElCamino.AspNetCore.Identity.AzureTable.Model.IdentityRole;
 
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-
-using ElCamino.Web.Identity.AzureTable.Tests.ModelTests;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.DataProtection;
-using Model = ElCamino.AspNetCore.Identity.AzureTable.Model;
-using ElCamino.AspNetCore.Identity.AzureTable.Helpers;
-
-namespace ElCamino.Web.Identity.AzureTable.Tests.Fixtures
+namespace ElCamino.AspNetCore.Identity.AzureTable.Tests.Fixtures
 {
-    public class BaseFixture<TUser, TRole, TContext, TUserStore> 
-        : BaseFixture<TUser, TContext, string, Model.IdentityUserClaim, Model.IdentityUserLogin, Model.IdentityUserToken, TUserStore, DefaultKeyHelper>
+    public class BaseFixture<TUser, TRole, TContext, TUserStore>
+        : BaseFixture<TUser, TContext, string, IdentityUserClaim, IdentityUserLogin,
+            IdentityUserToken, TUserStore, DefaultKeyHelper>
         where TUser : IdentityUser, new()
         where TRole : IdentityRole, new()
         where TContext : IdentityCloudContext, new()
@@ -65,14 +60,11 @@ namespace ElCamino.Web.Identity.AzureTable.Tests.Fixtures
 
             id.AddRoles<IdentityRole>();
 
-            
-            id = id.AddAzureTableStores<TContext>(new Func<IdentityConfiguration>(() =>
-            {
-                return GetConfig();
-            }));
-           
 
-            id.CreateAzureTablesIfNotExists<TContext>();
+            id = id.AddAzureTableStores<TContext>(GetConfig);
+
+
+            id.CreateAzureTablesIfNotExists();
             id.Services.AddDataProtection();
             id.AddDefaultTokenProviders();
 
@@ -83,10 +75,7 @@ namespace ElCamino.Web.Identity.AzureTable.Tests.Fixtures
 
         public override UserManager<TUser> CreateUserManager(IdentityOptions options = null)
         {
-            if (options == null)
-            {
-                options = new IdentityOptions();
-            }
+            options ??= new IdentityOptions();
             //return new RoleManager<TRole>(store);
             IServiceCollection services = new ServiceCollection();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -102,10 +91,7 @@ namespace ElCamino.Web.Identity.AzureTable.Tests.Fixtures
             //Add the role here to load the correct UserStore
             id.AddRoles<IdentityRole>();
 
-            id = id.AddAzureTableStores<TContext>(new Func<IdentityConfiguration>(() =>
-            {
-                return GetConfig();
-            }));
+            id = id.AddAzureTableStores<TContext>(GetConfig);
 
             id.Services.AddDataProtection();
             id.AddDefaultTokenProviders();
@@ -120,10 +106,11 @@ namespace ElCamino.Web.Identity.AzureTable.Tests.Fixtures
     }
 
     public class BaseFixture<TUser, TContext, TUserStore>
-    : BaseFixture<TUser, TContext, string, Model.IdentityUserClaim, Model.IdentityUserLogin, Model.IdentityUserToken, TUserStore, DefaultKeyHelper>
+    : BaseFixture<TUser, TContext, string, IdentityUserClaim, IdentityUserLogin, IdentityUserToken,
+        TUserStore, DefaultKeyHelper>
     where TUser : IdentityUser, new()
     where TContext : IdentityCloudContext, new()
-    where TUserStore : UserOnlyStore<TUser, TContext, string, Model.IdentityUserClaim, Model.IdentityUserLogin, Model.IdentityUserToken>
+    where TUserStore : UserOnlyStore<TUser, TContext, string, IdentityUserClaim, IdentityUserLogin, IdentityUserToken>
     {
 
     }
@@ -140,7 +127,7 @@ namespace ElCamino.Web.Identity.AzureTable.Tests.Fixtures
     {
 
         #region IDisposable Support
-        protected bool disposedValue = false;
+        protected bool disposedValue;
 
         protected virtual void Dispose(bool disposing)
         {
@@ -201,8 +188,7 @@ namespace ElCamino.Web.Identity.AzureTable.Tests.Fixtures
 
         public TContext GetContext(IdentityConfiguration config)
         {
-            return Activator.CreateInstance(typeof(TContext), new object[1] {GetConfig()}) as TContext;
-
+            return Activator.CreateInstance(typeof(TContext), GetConfig()) as TContext;
         }
 
         public TUserStore CreateUserStore()
@@ -212,17 +198,14 @@ namespace ElCamino.Web.Identity.AzureTable.Tests.Fixtures
 
         public TUserStore CreateUserStore(TContext context,IdentityConfiguration config)
         {
-            var userStore = Activator.CreateInstance(typeof(TUserStore), new object[3] { context, GetKeyHelper(), config }) as TUserStore;
+            var userStore = Activator.CreateInstance(typeof(TUserStore), context, GetKeyHelper(), config) as TUserStore;
 
             return userStore;
         }
 
         public virtual UserManager<TUser> CreateUserManager(IdentityOptions options = null)
         {
-            if (options == null)
-            {
-                options = new IdentityOptions();
-            }
+            options ??= new IdentityOptions();
             //return new RoleManager<TRole>(store);
             IServiceCollection services = new ServiceCollection();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -235,15 +218,10 @@ namespace ElCamino.Web.Identity.AzureTable.Tests.Fixtures
                 config.Lockout.MaxFailedAccessAttempts = options.Lockout.MaxFailedAccessAttempts;
             });
 
-            
-            id = id.AddAzureTableStores<TContext>(new Func<IdentityConfiguration>(() =>
-            {
-                return GetConfig();
-            }));
-            
+
+            id = id.AddAzureTableStores<TContext>(GetConfig);
             id.Services.AddDataProtection();
             id.AddDefaultTokenProviders();
-            
             id.AddSignInManager();
 
             services.AddLogging();

@@ -29,7 +29,7 @@ namespace ElCamino.Identity.AzureTable.DataUtility
                 case LoginIndex:
                     return new LoginMigrateIndex(KeyHelper);
                 case ClaimRowkey:
-                    return new ClaimMigrateRowkey(KeyHelper);
+                    return new ClaimMigrateRowKey(KeyHelper);
                 case RoleAndClaimIndex:
                     return new RoleAndClaimMigrateIndex(KeyHelper);
                 case Users:

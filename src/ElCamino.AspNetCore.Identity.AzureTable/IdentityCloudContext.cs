@@ -2,14 +2,15 @@
 using System;
 using ElCamino.AspNetCore.Identity.AzureTable.Model;
 using Microsoft.Azure.Cosmos.Table;
+// ReSharper disable ClassWithVirtualMembersNeverInherited.Global
 
 namespace ElCamino.AspNetCore.Identity.AzureTable
 {
     public class IdentityCloudContext : IDisposable
     {
-        protected CloudTableClient _client = null;
-        protected bool _disposed = false;
-        protected IdentityConfiguration _config = null;
+        protected CloudTableClient _client;
+        protected bool _disposed;
+        protected IdentityConfiguration _config;
         protected CloudTable _roleTable;
         protected CloudTable _indexTable;
         protected CloudTable _userTable;
@@ -19,8 +20,9 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
         {
             if (config == null)
             {
-                throw new ArgumentNullException("config");
+                throw new ArgumentNullException(nameof(config));
             }
+            // ReSharper disable once VirtualMemberCallInConstructor
             Initialize(config);
         }
 
@@ -31,14 +33,13 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
             _client.DefaultRequestOptions.PayloadFormat = TablePayloadFormat.Json;
             if (!string.IsNullOrWhiteSpace(_config.LocationMode))
             {
-                LocationMode mode = LocationMode.PrimaryOnly;
-                if (Enum.TryParse<LocationMode>(_config.LocationMode, out mode))
+                if (Enum.TryParse<LocationMode>(_config.LocationMode, out var mode))
                 {
                     _client.DefaultRequestOptions.LocationMode = mode;
                 }
                 else
                 {
-                    throw new ArgumentException("Invalid LocationMode defined in config. For more information on geo-replication location modes: http://msdn.microsoft.com/en-us/library/azure/microsoft.windowsazure.storage.retrypolicies.locationmode.aspx", "config.LocationMode");
+                    throw new ArgumentException(@"Invalid LocationMode defined in config. For more information on geo-replication location modes: https://docs.microsoft.com/en-us/dotnet/api/microsoft.azure.cosmos.table.tablerequestoptions.locationmode?view=azure-dotnet#Microsoft_Azure_Cosmos_Table_TableRequestOptions_LocationMode", nameof(config.LocationMode));
                 }
             }
             _indexTable = _client.GetTableReference(FormatTableNameWithPrefix(!string.IsNullOrWhiteSpace(_config.IndexTableName) ? _config.IndexTableName : Constants.TableNames.IndexTable));
@@ -55,7 +56,7 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
         {
             if(!string.IsNullOrWhiteSpace(_config.TablePrefix))
             {
-                return string.Format("{0}{1}", _config.TablePrefix, baseTableName);
+                return $"{_config.TablePrefix}{baseTableName}";
             }
             return baseTableName;
         }
@@ -100,7 +101,7 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
         {
             if (this._disposed)
             {
-                throw new ObjectDisposedException(base.GetType().Name);
+                throw new ObjectDisposedException(GetType().Name);
             }
         }
         public void Dispose()

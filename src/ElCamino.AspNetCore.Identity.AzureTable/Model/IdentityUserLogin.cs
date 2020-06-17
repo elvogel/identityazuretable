@@ -2,17 +2,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos.Table;
 
 namespace ElCamino.AspNetCore.Identity.AzureTable.Model
 {
     public class IdentityUserLogin : IdentityUserLogin<string>, IGenerateKeys
     {
-        public IdentityUserLogin() { }
-
         /// <summary>
         /// Generates Row and Id keys.
         /// Partition key is equal to the UserId

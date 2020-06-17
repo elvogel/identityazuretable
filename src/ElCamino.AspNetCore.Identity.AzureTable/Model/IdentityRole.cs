@@ -1,7 +1,6 @@
 ﻿// MIT License Copyright 2020 (c) David Melendez. All rights reserved. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Identity;
 using System;
 using Microsoft.Azure.Cosmos.Table;
 
@@ -9,7 +8,8 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Model
 {
     public class IdentityRole : IdentityRole<string, IdentityUserRole>, IGenerateKeys
     {
-        public IdentityRole() : base() { }
+        public IdentityRole()
+        { }
 
         /// <summary>
         /// Generates Row and Id keys.
@@ -42,14 +42,8 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Model
         [IgnoreProperty]
         public override string Id
         {
-            get
-            {
-                return RowKey;
-            }
-            set
-            {
-                RowKey = value;
-            }
+            get => RowKey;
+            set => RowKey = value;
         }
     }
 
@@ -57,6 +51,7 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Model
         where TKey : IEquatable<TKey>
         where TUserRole : IdentityUserRole<TKey>
     {
+        private readonly ICollection<TUserRole> _users;
         public string PartitionKey { get; set; }
         public string RowKey { get; set; }
         public DateTimeOffset Timestamp { get; set; }
@@ -72,9 +67,9 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Model
             return TableEntity.WriteUserObject(this, operationContext);
         }
 
-        public IdentityRole() : base()
+        public IdentityRole()
         {
-            this.Users = new List<TUserRole>();
+            _users = new List<TUserRole>();
         }
 
         [IgnoreProperty]
@@ -82,6 +77,6 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Model
 
 
         [IgnoreProperty]
-        public ICollection<TUserRole> Users { get; private set; }
+        public ICollection<TUserRole> Users => _users;
     }
 }

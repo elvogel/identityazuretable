@@ -1,10 +1,6 @@
 ﻿// MIT License Copyright 2020 (c) David Melendez. All rights reserved. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ElCamino.AspNetCore.Identity.AzureTable.Tests
 {
@@ -34,13 +30,8 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Tests
             public static class GoogleProvider
             {
                 public const string LoginProvider = "Google";
-                public static string ProviderKey
-                {
-                    get
-                    {
-                        return string.Format("https://www.google.com/accounts/o8/id?id={0}", Guid.NewGuid().ToString("N"));
-                    }
-                }
+                public static string ProviderKey =>
+                    $"https://www.google.com/accounts/o8/id?id={Guid.NewGuid():N}";
             }
         }
     }

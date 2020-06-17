@@ -4,11 +4,11 @@
     <Description>Testing</Description>
     <VersionPrefix>2.0.0</VersionPrefix>
     <Authors>Dave Melendez</Authors>
-    <TargetFrameworks>net461;netcoreapp2.1;netcoreapp3.1</TargetFrameworks>
     <AssemblyName>ElCamino.AspNetCore.Identity.AzureTable.Tests</AssemblyName>
     <IsPackable>false</IsPackable>
     <Version>3.1</Version>
     <DebugType>Full</DebugType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
 
   </PropertyGroup>
 
@@ -22,41 +22,26 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\ElCamino.AspNetCore.Identity.AzureTable\ElCamino.AspNetCore.Identity.AzureTable.csproj" />
   </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.1' ">
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="3.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="3.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="3.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="3.1.0" />
-
-  </ItemGroup>
-
-  <ItemGroup Condition=" '$(TargetFramework)' != 'netcoreapp3.1' ">
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="2.2.4" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="2.2.0" />
-
-  </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Microsoft.Azure.Cosmos.Table" Version="1.0.5" />
-    <PackageReference Include="Microsoft.CodeCoverage" Version="16.4.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.4.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Table" Version="1.0.7" />
+    <PackageReference Include="Microsoft.CodeCoverage" Version="16.6.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.5" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="3.1.5" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.5" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="3.1.5" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="3.1.5" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="3.1.5" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="3.1.5" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.2.7" />
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
     <PackageReference Include="System.Diagnostics.TraceSource" Version="4.3.0" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="2.2.0" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.1">
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>

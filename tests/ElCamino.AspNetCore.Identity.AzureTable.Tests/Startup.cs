@@ -1,18 +1,15 @@
 ﻿// MIT License Copyright 2020 (c) David Melendez. All rights reserved. See License.txt in the project root for license information.
-using System;
+
 using ElCamino.AspNetCore.Identity.AzureTable.Model;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Identity.Core;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
-using IdentityUser = ElCamino.AspNetCore.Identity.AzureTable.Model.IdentityUser;
-using IdentityRole = ElCamino.AspNetCore.Identity.AzureTable.Model.IdentityRole;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using IdentityUser = ElCamino.AspNetCore.Identity.AzureTable.Model.IdentityUser;
 
-namespace ElCamino.AspNetCore.Identity.AzureTable.TestsExp
+namespace ElCamino.AspNetCore.Identity.AzureTable.Tests
 {
     public class Startup
     {
@@ -27,7 +24,7 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.TestsExp
             Configuration = configuration.Build();
         }
 
-        public IConfigurationRoot Configuration { get; set; }
+        public IConfigurationRoot Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -41,14 +38,11 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.TestsExp
             {
 
             })
-            //.AddEntityFrameworkStores<ApplicationDbContext>()            
-            .AddAzureTableStores<IdentityCloudContext>(new Func<IdentityConfiguration>(() =>
+            //.AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddAzureTableStores<IdentityCloudContext>(() => new IdentityConfiguration()
             {
-                return new IdentityConfiguration()
-                {
-                    StorageConnectionString = Configuration.GetValue<string>("IdentityAzureTable:identityConfiguration:storageConnectionString")
-                };
-            }))
+                StorageConnectionString = Configuration.GetValue<string>("IdentityAzureTable:identityConfiguration:storageConnectionString")
+            })
             .AddDefaultTokenProviders();
 
             // Add MVC services to the services container.
@@ -57,7 +51,7 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.TestsExp
         }
 
         // Configure is called after ConfigureServices is called.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerfactory)
+        public void Configure(IApplicationBuilder app)
         {
             // Add cookie-based authentication to the request pipeline.
             app.UseAuthentication();

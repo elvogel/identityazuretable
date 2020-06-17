@@ -1,18 +1,12 @@
 ﻿// MIT License Copyright 2020 (c) David Melendez. All rights reserved. See License.txt in the project root for license information.
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos.Table;
 
 namespace ElCamino.AspNetCore.Identity.AzureTable.Model
 {
     public class IdentityUserToken : IdentityUserToken<string>, IGenerateKeys
     {
-        public IdentityUserToken() { }
-
-
         /// <summary>
         /// Generates Row and Id keys.
         /// Partition key is equal to the UserId

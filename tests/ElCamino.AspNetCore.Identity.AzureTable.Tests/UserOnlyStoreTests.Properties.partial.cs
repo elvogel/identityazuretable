@@ -1,17 +1,9 @@
 ﻿// MIT License Copyright 2020 (c) David Melendez. All rights reserved. See License.txt in the project root for license information.
-using System;
-using System.Collections.Generic;
-using System.Linq;
+
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Azure.Cosmos.Table;
 using Xunit;
-using ElCamino.AspNetCore.Identity.AzureTable;
-using ElCamino.AspNetCore.Identity.AzureTable.Model;
 using ElCamino.Web.Identity.AzureTable.Tests.ModelTests;
-using ElCamino.Web.Identity.AzureTable.Tests.Fixtures;
 using IdentityUser = ElCamino.AspNetCore.Identity.AzureTable.Model.IdentityUser<string>;
-using IdentityRole = ElCamino.AspNetCore.Identity.AzureTable.Model.IdentityRole;
 
 
 namespace ElCamino.AspNetCore.Identity.AzureTable.Tests

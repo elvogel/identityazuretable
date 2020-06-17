@@ -2,17 +2,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Azure.Cosmos.Table;
 
 namespace ElCamino.AspNetCore.Identity.AzureTable.Model
 {
     public class IdentityUserRole : IdentityUserRole<string>, IGenerateKeys
     {
-        public IdentityUserRole() { }
-
         /// <summary>
         /// Generates Row and Id keys.
         /// Partition key is equal to the UserId
@@ -37,14 +32,8 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Model
 
         public string Id
         {
-            get
-            {
-                return RoleId;
-            }
-            set
-            {
-                RoleId = value;
-            }
+            get => RoleId;
+            set => RoleId = value;
         }
         
     }

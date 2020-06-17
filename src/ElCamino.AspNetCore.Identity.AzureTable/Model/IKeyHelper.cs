@@ -1,7 +1,5 @@
 ﻿// MIT License Copyright 2020 (c) David Melendez. All rights reserved. See License.txt in the project root for license information.
 
-using Microsoft.AspNetCore.Identity;
-
 namespace ElCamino.AspNetCore.Identity.AzureTable.Model
 {
     public interface IKeyHelper
@@ -14,6 +12,7 @@ namespace ElCamino.AspNetCore.Identity.AzureTable.Model
 
         string GenerateRowKeyUserName(string plainUserName);
 
+        // ReSharper disable once UnusedMemberInSuper.Global
         string GeneratePartitionKeyUserName(string plainUserName);
 
         string GenerateRowKeyUserId(string plainUserId);

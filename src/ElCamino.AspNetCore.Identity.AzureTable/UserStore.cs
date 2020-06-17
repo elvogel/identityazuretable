@@ -4,35 +4,32 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Security.Claims;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Azure.Cosmos.Table;
-using ElCamino.AspNetCore.Identity.AzureTable.Helpers;
 using ElCamino.AspNetCore.Identity.AzureTable.Model;
 
 namespace ElCamino.AspNetCore.Identity.AzureTable
 {
-    public class UserStore<TUser, TContext> : UserStore<TUser, Model.IdentityRole, string, Model.IdentityUserLogin, Model.IdentityUserRole, Model.IdentityUserClaim, Model.IdentityUserToken, TContext>
-       , IUserStore<TUser>
-       where TUser : Model.IdentityUser<string>, new()
+    public class UserStore<TUser, TContext> : UserStore<TUser, Model.IdentityRole, string,
+        IdentityUserLogin, IdentityUserRole, IdentityUserClaim, IdentityUserToken, TContext>
+        where TUser : Model.IdentityUser<string>, new()
        where TContext : IdentityCloudContext, new()
     {
-        public UserStore(TContext context, IKeyHelper keyHelper, IdentityConfiguration config) : base(context, keyHelper, config) { }
+        public UserStore(TContext context, IKeyHelper keyHelper, IdentityConfiguration config) :
+            base(context, keyHelper, config) { }
     }
     /// <summary>
-    /// Supports as slimmer, trimmer, IdentityUser 
-    /// Use this for keep inline with v3 core identity base user model. 
+    /// Supports as slimmer, trimmer, IdentityUser
+    /// Use this for keep inline with v3 core identity base user model.
     /// </summary>
     /// <typeparam name="TUser"></typeparam>
     /// <typeparam name="TRole"></typeparam>
     /// <typeparam name="TContext"></typeparam>
-    public class UserStore<TUser, TRole, TContext> : UserStore<TUser, TRole, string, Model.IdentityUserLogin, Model.IdentityUserRole, Model.IdentityUserClaim, Model.IdentityUserToken, TContext>
-        , IUserStore<TUser>
-        where TUser : Model.IdentityUser<string>, new()
-        where TRole : Model.IdentityRole<string, Model.IdentityUserRole>, new()
+    public class UserStore<TUser, TRole, TContext> : UserStore<TUser, TRole, string, IdentityUserLogin,
+            IdentityUserRole, IdentityUserClaim, IdentityUserToken, TContext> where TUser : Model.IdentityUser<string>, new()
+        where TRole : IdentityRole<string, IdentityUserRole>, new()
         where TContext : IdentityCloudContext, new()
     {
         public UserStore(TContext context, IKeyHelper keyHelper, IdentityConfiguration config) : base(context, keyHelper, config) { }
@@ -40,10 +37,8 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
 
     public class UserStore<TUser, TRole, TKey, TUserLogin, TUserRole, TUserClaim, TUserToken, TContext> :
         UserOnlyStore<TUser, TContext, TKey, TUserClaim, TUserLogin, TUserToken>
-        , IUserRoleStore<TUser>
-        , IDisposable
-        where TUser : Model.IdentityUser<TKey>, new()
-        where TRole : Model.IdentityRole<TKey, TUserRole>, new()
+        , IUserRoleStore<TUser> where TUser : Model.IdentityUser<TKey>, new()
+        where TRole : IdentityRole<TKey, TUserRole>, new()
         where TKey : IEquatable<TKey>
         where TUserLogin : Model.IdentityUserLogin<TKey>, new()
         where TUserRole : Model.IdentityUserRole<TKey>, new()
@@ -53,14 +48,14 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
     {
         protected CloudTable _roleTable;
 
-        public UserStore(TContext context, IKeyHelper keyHelper, IdentityConfiguration config) : base(context, keyHelper, config) 
+        public UserStore(TContext context, IKeyHelper keyHelper, IdentityConfiguration config) : base(context, keyHelper, config)
         {
             this._roleTable = context.RoleTable;
         }
 
         public override async Task<bool> CreateTablesIfNotExistsAsync()
         {
-            Task<bool>[] tasks = 
+            Task<bool>[] tasks =
                 new Task<bool>[]
                 {
                     base.CreateTablesIfNotExistsAsync(),
@@ -70,7 +65,8 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
             return tasks.All(t => t.Result);
         }
 
-        public virtual async Task AddToRoleAsync(TUser user, string roleName, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task AddToRoleAsync(TUser user, string roleName,
+            CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             this.ThrowIfDisposed();
@@ -80,36 +76,41 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
                 throw new ArgumentException(IdentityResources.ValueCannotBeNullOrEmpty, nameof(roleName));
             }
 
-            TRole roleT = new TRole();
-            roleT.Name = roleName;
-            ((Model.IGenerateKeys)roleT).GenerateKeys(_keyHelper);
+            var roleT = new TRole {Name = roleName};
+            ((IGenerateKeys)roleT).GenerateKeys(_keyHelper);
 
 
-            TUserRole userToRole = new TUserRole();
-            userToRole.PartitionKey = _keyHelper.GenerateRowKeyUserId(ConvertIdToString(user.Id));
-            userToRole.RoleId = roleT.Id;
-            userToRole.RoleName = roleT.Name;
-            userToRole.UserId = user.Id;
+            var userToRole = new TUserRole
+            {
+                PartitionKey = _keyHelper.GenerateRowKeyUserId(ConvertIdToString(user.Id)),
+                RoleId = roleT.Id,
+                RoleName = roleT.Name,
+                UserId = user.Id
+            };
             TUserRole item = userToRole;
 
-            ((Model.IGenerateKeys)item).GenerateKeys(_keyHelper);
+            ((IGenerateKeys)item).GenerateKeys(_keyHelper);
 
             roleT.Users.Add(item);
 
-            List<Task> tasks = new List<Task>(2);
+            var tasks = new List<Task>(2)
+            {
+                _userTable.ExecuteAsync(TableOperation.Insert(item), cancellationToken),
+                _indexTable.ExecuteAsync(
+                    TableOperation.InsertOrReplace(CreateRoleIndex(userToRole.PartitionKey, roleName)),
+                    cancellationToken)
+            };
 
-            tasks.Add(_userTable.ExecuteAsync(TableOperation.Insert(item)));
-            tasks.Add(_indexTable.ExecuteAsync(TableOperation.InsertOrReplace(CreateRoleIndex(userToRole.PartitionKey, roleName))));
 
             await Task.WhenAll(tasks);
         }
 
-        public async virtual Task<IList<string>> GetRolesAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<IList<string>> GetRolesAsync(TUser user, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             this.ThrowIfDisposed();
             if (user == null) throw new ArgumentNullException(nameof(user));
-            if (EqualityComparer<TKey>.Default.Equals(user.Id, default(TKey)))
+            if (EqualityComparer<TKey>.Default.Equals(user.Id, default))
             {
                 throw new ArgumentNullException(nameof(user.Id));
             }
@@ -128,66 +129,55 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
                 rowFilter);
             tq.SelectColumns = new List<string>() { roleName };
             var userRoles =
-#if NETSTANDARD2_1
-                (await _userTable.ExecuteQueryAsync(tq).ToListAsync())
-#else
                 (await _userTable.ExecuteQueryAsync(tq))
-#endif
                 .Where(w => w.Properties[roleName] != null)
                 .Select(d => d.Properties[roleName].StringValue)
                 .Where(di => !string.IsNullOrWhiteSpace(di));
 
-            int userRoleTotalCount = userRoles.Count();
+            var roles = userRoles as string[] ?? userRoles.ToArray();
+            int userRoleTotalCount = roles.Length;
             if (userRoleTotalCount > 0)
             {
                 const double pageSize = 10d;
-                double maxPages = Math.Ceiling((double)userRoleTotalCount / pageSize);
+                double maxPages = Math.Ceiling(userRoleTotalCount / pageSize);
 
                 List<Task<List<string>>> tasks = new List<Task<List<string>>>((int)maxPages);
 
                 for (int iPageIndex = 0; iPageIndex < maxPages; iPageIndex++)
                 {
                     int skip = (int)(iPageIndex * pageSize);
-                    IEnumerable<string> userRolesTemp = skip > 0 ? userRoles.Skip(skip).Take((int)pageSize) :
-                        userRoles.Take((int)pageSize); ;
+                    IEnumerable<string> userRolesTemp = skip > 0 ? roles.Skip(skip).Take((int)pageSize) :
+                        roles.Take((int)pageSize);
 
                     string queryTemp = string.Empty;
                     int iRoleCounter = 0;
                     foreach (var urt in userRolesTemp)
                     {
-                        if (iRoleCounter == 0)
-                        {
-                            queryTemp = BuildRoleQuery(urt);
-                        }
-                        else
-                        {
-                            queryTemp = TableQuery.CombineFilters(queryTemp, TableOperators.Or, BuildRoleQuery(urt));
-                        }
+                        queryTemp = iRoleCounter == 0 ? BuildRoleQuery(urt) :
+                            TableQuery.CombineFilters(queryTemp, TableOperators.Or,
+                                BuildRoleQuery(urt));
                         iRoleCounter++;
                     }
                     const string rName = "Name";
-                    TableQuery tqRoles = new TableQuery();
-                    tqRoles.FilterString = queryTemp;
-                    tqRoles.SelectColumns = new List<string>() { rName };
+                    var tqRoles = new TableQuery
+                    {
+                        FilterString = queryTemp, SelectColumns = new List<string>() {rName}
+                    };
                     tasks.Add(
-#if NETSTANDARD2_1
-                        _roleTable.ExecuteQueryAsync(tqRoles).ToListAsync()
-#else
                         _roleTable.ExecuteQueryAsync(tqRoles)
-#endif
                         .ContinueWith((t) => {
                             return t.Result.Where(w => w.Properties[rName] != null)
                             .Select(d => d.Properties[rName].StringValue)
                             .Where(di => !string.IsNullOrWhiteSpace(di))
                             .ToList();
-                        })
+                        }, cancellationToken)
                     );
                 }
                 await Task.WhenAll(tasks).ConfigureAwait(false);
-                return tasks.Select(s => s.Result).SelectMany(m => m).ToList() as IList<string>;
+                return tasks.Select(s => s.Result).SelectMany(m => m).ToList();
             }
 
-            return new List<string>() as IList<string>;
+            return new List<string>();
         }
         public string BuildRoleQuery(string normalizedRoleName)
         {
@@ -203,7 +193,8 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
                 rowFilter);
         }
 
-        public async virtual Task<IList<TUser>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<IList<TUser>> GetUsersInRoleAsync(string roleName,
+            CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -212,47 +203,39 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
                 throw new ArgumentException(IdentityResources.ValueCannotBeNullOrEmpty, nameof(roleName));
             }
 
-            if (await RoleExistsAsync(roleName))
+            if (!await RoleExistsAsync(roleName)) return new List<TUser>();
+
+            string GetTableQueryFilterByUserId(string userId)
             {
-                Func<string, string> getTableQueryFilterByUserId = (userId) =>
-                {
-                    string rowFilter = TableQuery.CombineFilters(
-                        TableQuery.GenerateFilterCondition(nameof(TableEntity.RowKey), QueryComparisons.Equal, userId),
-                        TableOperators.Or,
-                        TableQuery.GenerateFilterCondition(nameof(TableEntity.RowKey), QueryComparisons.Equal, _keyHelper.GenerateRowKeyIdentityUserRole(roleName)));
+                string rowFilter = TableQuery.CombineFilters(TableQuery.GenerateFilterCondition(nameof(TableEntity.RowKey), QueryComparisons.Equal, userId), TableOperators.Or, TableQuery.GenerateFilterCondition(nameof(TableEntity.RowKey), QueryComparisons.Equal, _keyHelper.GenerateRowKeyIdentityUserRole(roleName)));
 
-                    string tqFilter = TableQuery.CombineFilters(
-                        TableQuery.GenerateFilterCondition(nameof(TableEntity.PartitionKey), QueryComparisons.Equal, userId), TableOperators.And,
-                        rowFilter);
-                    return tqFilter;
-                };
-
-
-                return (await this.GetUsersAggregateByIndexQueryAsync(GetUserByRoleQuery(roleName), (userId) => {
-                    return GetUserAggregateQueryAsync(userId, setFilterByUserId: getTableQueryFilterByUserId, whereClaim: null, whereRole: (ur) =>
-                    {
-                        return ur.RowKey == _keyHelper.GenerateRowKeyIdentityUserRole(roleName);
-                    });
-
-                })).ToList();
+                string tqFilter = TableQuery.CombineFilters(TableQuery.GenerateFilterCondition(nameof(TableEntity.PartitionKey), QueryComparisons.Equal, userId), TableOperators.And, rowFilter);
+                return tqFilter;
             }
 
-            return new List<TUser>();
+
+            return (await this.GetUsersAggregateByIndexQueryAsync(GetUserByRoleQuery(roleName), (userId) => {
+                return GetUserAggregateQueryAsync(userId, GetTableQueryFilterByUserId,
+                    whereClaim: null, whereRole: (ur) => ur.RowKey == _keyHelper.GenerateRowKeyIdentityUserRole(roleName));
+
+            })).ToList();
+
         }
 
-        public async virtual Task<bool> IsInRoleAsync(TUser user, string roleName, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task<bool> IsInRoleAsync(TUser user, string roleName,
+            CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            this.ThrowIfDisposed();
+            ThrowIfDisposed();
             if (user == null) throw new ArgumentNullException(nameof(user));
             if (string.IsNullOrWhiteSpace(roleName))
             {
                 throw new ArgumentException(IdentityResources.ValueCannotBeNullOrEmpty, nameof(roleName));
             }
 
-            string userId = _keyHelper.GenerateRowKeyUserId(ConvertIdToString(user.Id));
+            var userId = _keyHelper.GenerateRowKeyUserId(ConvertIdToString(user.Id));
             // Changing to a live query to mimic EF UserStore in Identity 3.0
-            TableQuery tq = new TableQuery();
+            var tq = new TableQuery();
 
             string rowFilter =
                 TableQuery.GenerateFilterCondition(nameof(TableEntity.RowKey), QueryComparisons.Equal, _keyHelper.GenerateRowKeyIdentityUserRole(roleName));
@@ -263,13 +246,9 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
                 rowFilter);
             tq.SelectColumns = new List<string>() { nameof(TableEntity.RowKey) };
             tq.TakeCount = 1;
-            var tasks = new Task<bool>[]
+            var tasks = new[]
             {
-#if NETSTANDARD2_1
-                _userTable.ExecuteQueryAsync(tq).AnyAsync(),
-#else
                 Task.FromResult(_userTable.ExecuteQuery(tq).Any()),
-#endif
                 RoleExistsAsync(roleName)
             };
 
@@ -280,37 +259,34 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
 
         public async Task<bool> RoleExistsAsync(string roleName)
         {
-            TableQuery tqRoles = new TableQuery();
-            tqRoles.FilterString = BuildRoleQuery(roleName);
-            tqRoles.SelectColumns = new List<string>() { "Name" };
-            tqRoles.TakeCount = 1;
-#if NETSTANDARD2_1
-            return await _roleTable.ExecuteQueryAsync(tqRoles).AnyAsync();
-#else
+            var tqRoles = new TableQuery
+            {
+                FilterString = BuildRoleQuery(roleName), SelectColumns = new List<string>() {"Name"}, TakeCount = 1
+            };
             return (await _roleTable.ExecuteQueryAsync(tqRoles)).Any();
-#endif
         }
 
-        public virtual async Task RemoveFromRoleAsync(TUser user, string roleName, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task RemoveFromRoleAsync(TUser user, string roleName,
+            CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            this.ThrowIfDisposed();
+            ThrowIfDisposed();
             if (user == null) throw new ArgumentNullException(nameof(user));
             if (string.IsNullOrWhiteSpace(roleName))
                 throw new ArgumentException(IdentityResources.ValueCannotBeNullOrEmpty, nameof(roleName));
 
             string userPartitionKey = _keyHelper.GenerateRowKeyUserId(ConvertIdToString(user.Id));
-            TUserRole item = null;
-            var tresult = await _userTable.ExecuteAsync(TableOperation.Retrieve<TUserRole>(userPartitionKey, _keyHelper.GenerateRowKeyIdentityRole(roleName))).ConfigureAwait(false);
-            item = tresult.Result as TUserRole;
+            var tresult = await _userTable.ExecuteAsync(TableOperation.Retrieve<TUserRole>(
+                userPartitionKey, _keyHelper.GenerateRowKeyIdentityRole(roleName)), cancellationToken)
+                .ConfigureAwait(false);
 
-            if (item != null)
+            if (tresult.Result is TUserRole item)
             {
                 TableOperation deleteOperation = TableOperation.Delete(item);
 
                 await Task.WhenAll(
-                   _userTable.ExecuteAsync(deleteOperation),
-                    _indexTable.ExecuteAsync(TableOperation.Delete(CreateRoleIndex(userPartitionKey, roleName)))
+                   _userTable.ExecuteAsync(deleteOperation, cancellationToken),
+                    _indexTable.ExecuteAsync(TableOperation.Delete(CreateRoleIndex(userPartitionKey, roleName)), cancellationToken)
                 );
 
             }
@@ -322,40 +298,30 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
         Func<TUserClaim, bool> whereClaim = null)
         {
             const double pageSize = 50.0;
-            int pages = (int)Math.Ceiling(((double)userIds.Count() / pageSize));
+            var ids = userIds as string[] ?? userIds.ToArray();
+            int pages = (int)Math.Ceiling(ids.Length / pageSize);
             List<TableQuery> listTqs = new List<TableQuery>(pages);
-            IEnumerable<string> tempUserIds = null;
 
             for (int currentPage = 1; currentPage <= pages; currentPage++)
             {
-                if (currentPage > 1)
-                {
-                    tempUserIds = userIds.Skip(((currentPage - 1) * (int)pageSize)).Take((int)pageSize);
-                }
-                else
-                {
-                    tempUserIds = userIds.Take((int)pageSize);
-                }
+                var tempUserIds = currentPage > 1 ?
+                    ids.Skip(((currentPage - 1) * (int)pageSize)).Take((int)pageSize) :
+                    ids.Take((int)pageSize);
 
                 TableQuery tq = new TableQuery();
                 int i = 0;
                 foreach (var tempUserId in tempUserIds)
                 {
 
-                    string temp = TableQuery.GenerateFilterCondition(nameof(TableEntity.PartitionKey), QueryComparisons.Equal, tempUserId);
+                    var temp = TableQuery.GenerateFilterCondition(nameof(TableEntity.PartitionKey),
+                        QueryComparisons.Equal, tempUserId);
                     if (setFilterByUserId != null)
                     {
                         temp = setFilterByUserId(tempUserId);
                     }
 
-                    if (i > 0)
-                    {
-                        tq.FilterString = TableQuery.CombineFilters(tq.FilterString, TableOperators.Or, temp);
-                    }
-                    else
-                    {
-                        tq.FilterString = temp;
-                    }
+                    tq.FilterString = i > 0 ? TableQuery.CombineFilters(tq.FilterString,
+                        TableOperators.Or, temp) : temp;
                     i++;
                 }
                 listTqs.Add(tq);
@@ -369,11 +335,7 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
             var tasks = listTqs.Select((q) =>
             {
                 return
-#if NETSTANDARD2_1
-                _userTable.ExecuteQueryAsync(q).ToListAsync()
-#else
                 _userTable.ExecuteQueryAsync(q)
-#endif
                      .ContinueWith((taskResults) =>
                      {
                          //ContinueWith returns completed task. Calling .Result is safe here.
@@ -407,7 +369,7 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
             await Task.WhenAll(tasks).ConfigureAwait(false);
 #if DEBUG
             Debug.WriteLine("GetUserAggregateQuery (GetUserAggregateTotal): {0} seconds", (DateTime.UtcNow - startUserAggTotal).TotalSeconds);
-            Debug.WriteLine("GetUserAggregateQuery (Return Count): {0} userIds", bag.Count());
+            Debug.WriteLine("GetUserAggregateQuery (Return Count): {0} userIds", bag.Count);
 #endif
             return bag;
         }
@@ -417,60 +379,49 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
             IEnumerable<TUserClaim> Claims,
             IEnumerable<TUserLogin> Logins,
             IEnumerable<TUserToken> Tokens)
-        MapUserAggregate(string userId, 
+        MapUserAggregate(string userId,
             IEnumerable<DynamicTableEntity> userResults,
             Func<TUserRole, bool> whereRole = null,
             Func<TUserClaim, bool> whereClaim = null)
         {
 
-            TUser user = default(TUser);
+            TUser user;
             IEnumerable<TUserRole> roles = Enumerable.Empty<TUserRole>();
             IEnumerable<TUserClaim> claims = Enumerable.Empty<TUserClaim>();
             IEnumerable<TUserLogin> logins = Enumerable.Empty<TUserLogin>();
             IEnumerable<TUserToken> tokens = Enumerable.Empty<TUserToken>();
 
-            var vUser = userResults.Where(u => u.RowKey.Equals(userId) && u.PartitionKey.Equals(userId)).SingleOrDefault();
-            var op = new OperationContext();
+            var results = userResults as DynamicTableEntity[] ?? userResults.ToArray();
+            var vUser = results.SingleOrDefault(u => u.RowKey.Equals(userId) && u.PartitionKey.Equals(userId));
+            //var op = new OperationContext();
 
-            if (vUser != null)
+            if (vUser == null) return (null, roles, claims, logins, tokens);
             {
                 //User
                 user = MapTableEntity<TUser>(vUser);
 
                 //Roles
-                roles = userResults.Where(u => u.RowKey.StartsWith(Constants.RowKeyConstants.PreFixIdentityUserRole)
-                    && u.PartitionKey.Equals(userId))
-                    .Select((log) =>
-                    {
-                        return MapTableEntity<TUserRole>(log);
-                    });
+                roles = results.Where(u => u.RowKey.StartsWith(Constants.RowKeyConstants.PreFixIdentityUserRole)
+                                           && u.PartitionKey.Equals(userId))
+                    .Select(MapTableEntity<TUserRole>);
                 //Claims
-                claims = userResults.Where(u => u.RowKey.StartsWith(Constants.RowKeyConstants.PreFixIdentityUserClaim)
-                     && u.PartitionKey.Equals(userId))
-                    .Select((log) =>
-                    {
-                        return MapTableEntity<TUserClaim>(log);
-                    });
+                claims = results.Where(u => u.RowKey.StartsWith(Constants.RowKeyConstants.PreFixIdentityUserClaim)
+                                            && u.PartitionKey.Equals(userId))
+                    .Select(MapTableEntity<TUserClaim>);
                 //Logins
-                logins = userResults.Where(u => u.RowKey.StartsWith(Constants.RowKeyConstants.PreFixIdentityUserLogin)
-                    && u.PartitionKey.Equals(userId))
-                    .Select((log) =>
-                    {
-                        return MapTableEntity<TUserLogin>(log);
-                    });
+                logins = results.Where(u => u.RowKey.StartsWith(Constants.RowKeyConstants.PreFixIdentityUserLogin)
+                                            && u.PartitionKey.Equals(userId))
+                    .Select(MapTableEntity<TUserLogin>);
 
                 //Tokens
-                tokens = userResults.Where(u => u.RowKey.StartsWith(Constants.RowKeyConstants.PreFixIdentityUserToken)
-                     && u.PartitionKey.Equals(userId))
-                    .Select((log) =>
-                    {
-                        return MapTableEntity<TUserToken>(log);
-                    });
+                tokens = results.Where(u => u.RowKey.StartsWith(Constants.RowKeyConstants.PreFixIdentityUserToken)
+                                            && u.PartitionKey.Equals(userId))
+                    .Select(MapTableEntity<TUserToken>);
             }
             return (user, roles, claims, logins, tokens);
         }
 
-        public async override Task<IdentityResult> DeleteAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<IdentityResult> DeleteAsync(TUser user, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -478,37 +429,40 @@ namespace ElCamino.AspNetCore.Identity.AzureTable
 
             List<Task> tasks = new List<Task>(50);
             string userPartitionKey = _keyHelper.GenerateRowKeyUserId(ConvertIdToString(user.Id));
-#if NETSTANDARD2_1
-            var userRows = await GetUserAggregateQueryAsync(userPartitionKey).ToListAsync().ConfigureAwait(false);
-#else
-            var userRows = await GetUserAggregateQueryAsync(userPartitionKey).ConfigureAwait(false);
-#endif
-            tasks.Add(DeleteAllUserRows(userPartitionKey, userRows));
+            var userRows = await
+                GetUserAggregateQueryAsync(userPartitionKey).ConfigureAwait(false);
+            var rows = userRows as DynamicTableEntity[] ?? userRows.ToArray();
+            tasks.Add(DeleteAllUserRows(userPartitionKey, rows));
 
-            tasks.Add(_indexTable.ExecuteAsync(TableOperation.Delete(CreateUserNameIndex(userPartitionKey, user.UserName))));
+            tasks.Add(_indexTable.ExecuteAsync(TableOperation.Delete(CreateUserNameIndex(userPartitionKey, user.UserName)),
+                cancellationToken));
 
-            var userAgg = MapUserAggregate(userPartitionKey, userRows);
+            var userAgg = MapUserAggregate(userPartitionKey, rows);
 
             //Don't use the BatchHelper for login index table, partition keys are likely not the same
-            //since they are based on logonprovider and providerkey
+            //since they are based on LogonProvider and ProviderKey
             foreach (var userLogin in userAgg.Logins)
             {
-                tasks.Add(_indexTable.ExecuteAsync(TableOperation.Delete(CreateLoginIndex(userPartitionKey, userLogin.LoginProvider, userLogin.ProviderKey))));
+                tasks.Add(_indexTable.ExecuteAsync(TableOperation.Delete(CreateLoginIndex(userPartitionKey,
+                    userLogin.LoginProvider, userLogin.ProviderKey)), cancellationToken));
             }
 
             foreach (var userRole in userAgg.Roles)
             {
-                tasks.Add(_indexTable.ExecuteAsync(TableOperation.Delete(CreateRoleIndex(userPartitionKey, userRole.RoleName))));
+                tasks.Add(_indexTable.ExecuteAsync(TableOperation.Delete(CreateRoleIndex(userPartitionKey,
+                    userRole.RoleName)), cancellationToken));
             }
 
             foreach (var userClaim in userAgg.Claims)
             {
-                tasks.Add(_indexTable.ExecuteAsync(TableOperation.Delete(CreateClaimIndex(userPartitionKey, userClaim.ClaimType, userClaim.ClaimValue))));
+                tasks.Add(_indexTable.ExecuteAsync(TableOperation.Delete(CreateClaimIndex(userPartitionKey,
+                    userClaim.ClaimType, userClaim.ClaimValue)), cancellationToken));
             }
 
             if (!string.IsNullOrWhiteSpace(user.Email))
             {
-                tasks.Add(_indexTable.ExecuteAsync(TableOperation.Delete(CreateEmailIndex(userPartitionKey, user.Email))));
+                tasks.Add(_indexTable.ExecuteAsync(TableOperation.Delete(CreateEmailIndex(userPartitionKey,
+                    user.Email)), cancellationToken));
             }
 
             try

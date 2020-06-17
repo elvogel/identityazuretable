@@ -6,14 +6,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using ElCamino.AspNetCore.Identity.AzureTable;
 using Microsoft.Azure.Cosmos.Table;
-using ElCamino.AspNetCore.Identity.AzureTable.Helpers;
 using ElCamino.AspNetCore.Identity.AzureTable.Model;
 
 namespace ElCamino.Identity.AzureTable.DataUtility
 {
     public class RoleAndClaimMigrateIndex : IMigration
     {
-        private IKeyHelper _keyHelper;
+        private readonly IKeyHelper _keyHelper;
         public RoleAndClaimMigrateIndex(IKeyHelper keyHelper)
         {
             _keyHelper = keyHelper;
@@ -21,8 +20,10 @@ namespace ElCamino.Identity.AzureTable.DataUtility
 
         public TableQuery GetSourceTableQuery()
         {
-            TableQuery tq = new TableQuery();
-            tq.SelectColumns = new List<string>() { "PartitionKey", "RowKey", "KeyVersion" };
+            TableQuery tq = new TableQuery
+            {
+                SelectColumns = new List<string>() {"PartitionKey", "RowKey", "KeyVersion"}
+            };
             string partitionFilter = TableQuery.CombineFilters(
                 TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.GreaterThanOrEqual, Constants.RowKeyConstants.PreFixIdentityUserId),
                 TableOperators.And,
@@ -50,7 +51,7 @@ namespace ElCamino.Identity.AzureTable.DataUtility
                             .Where(UserWhereFilter);
 
 
-            var result2 = Parallel.ForEach(rolesAndClaims, new ParallelOptions() { MaxDegreeOfParallelism = maxDegreesParallel }, (dte) =>
+            Parallel.ForEach(rolesAndClaims, new ParallelOptions() { MaxDegreeOfParallelism = maxDegreesParallel }, (dte) =>
             {
 
                 //Add the role or claim index
@@ -64,12 +65,12 @@ namespace ElCamino.Identity.AzureTable.DataUtility
                         KeyVersion = _keyHelper.KeyVersion,
                         ETag = Constants.ETagWildcard
                     };
-                    var r = targetContext.IndexTable.ExecuteAsync(TableOperation.InsertOrReplace(index)).Result;
+                    var unused = targetContext.IndexTable.ExecuteAsync(TableOperation.InsertOrReplace(index)).Result;
                     updateComplete?.Invoke();
                 }
                 catch (Exception ex)
                 {
-                    updateError?.Invoke(string.Format("{0}\t{1}", dte.PartitionKey, ex.Message));
+                    updateError?.Invoke($"{dte.PartitionKey}\t{ex.Message}");
                 }
 
             });

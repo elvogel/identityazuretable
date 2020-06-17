@@ -1,12 +1,10 @@
 ﻿// MIT License Copyright 2020 (c) David Melendez. All rights reserved. See License.txt in the project root for license information.
 
 using ElCamino.AspNetCore.Identity.AzureTable;
-using ElCamino.AspNetCore.Identity.AzureTable.Helpers;
 using ElCamino.AspNetCore.Identity.AzureTable.Model;
 using Microsoft.Azure.Cosmos.Table;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace ElCamino.Identity.AzureTable.DataUtility
@@ -37,7 +35,7 @@ namespace ElCamino.Identity.AzureTable.DataUtility
                 try
                 {
                     targetContext.RoleTable.ExecuteAsync(TableOperation.InsertOrReplace(ConvertToTargetRoleEntity(dte, sourceContext)));
-                   
+
                     updateComplete?.Invoke();
                 }
                 catch (AggregateException exagg)
@@ -84,7 +82,7 @@ namespace ElCamino.Identity.AzureTable.DataUtility
 
                 string roleName = GetRoleNameBySourceId(sourceEntity.PartitionKey, sourcesContext);
 
-                targetEntity = new DynamicTableEntity(_keyHelper.GenerateRowKeyIdentityRole(roleName), 
+                targetEntity = new DynamicTableEntity(_keyHelper.GenerateRowKeyIdentityRole(roleName),
                     _keyHelper.GenerateRowKeyIdentityRoleClaim(claimType, claimValue), Constants.ETagWildcard, sourceEntity.Properties);
                 targetEntity.Properties["KeyVersion"] = new EntityProperty(_keyHelper.KeyVersion);
             }
